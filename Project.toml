@@ -1,9 +1,13 @@
 name = "spectral1o"
 uuid = "2b401c16-ebc6-47e4-b9ce-2892af244d02"
-authors = ["André <andrezito300@gmail.com> and contributors"]
 version = "1.0.0-DEV"
+authors = ["André <andrezito300@gmail.com> and contributors"]
+
+[deps]
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 
 [compat]
+Revise = "3.12.1"
 julia = "1.12"
 
 [extras]
