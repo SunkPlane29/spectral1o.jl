@@ -4,10 +4,23 @@ version = "1.0.0-DEV"
 authors = ["André <andrezito300@gmail.com> and contributors"]
 
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+tovjl = "5653e403-c640-4dcf-92f1-15de92eed5fc"
 
 [compat]
+CairoMakie = "0.15.6"
+DataInterpolations = "8.6.1"
+DelimitedFiles = "1.9.1"
+Printf = "1.11.0"
+QuadGK = "2.11.2"
 Revise = "3.12.1"
+SpecialFunctions = "2.6.1"
 julia = "1.12"
 
 [extras]
