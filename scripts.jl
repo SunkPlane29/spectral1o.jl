@@ -57,13 +57,15 @@ end
 
 function test_fit_eos()
     p_true, e_true, cs2_true = load_crust("in/ska.table")
+    gamma_type = :pa
+    nparam = 5
 
-    params = fit_param(p_true, e_true; n_param=12, pa_eos=true)
+    params = fit_param(p_true, e_true; n_param=nparam, gamma_type=gamma_type)
 
     println("Fitted parameters: ", params)
-    println("Chi-squared error: ", chierror(p_true, e_true, params; pa_eos=true))
+    println("Chi-squared error: ", chierror(p_true, e_true, params; gamma_type=gamma_type))
 
-    p_model, e_model, cs2_model = get_eos(params, "in/ska.table"; pa_eos=true)
+    p_model, e_model, cs2_model = get_eos(params, "in/ska.table"; gamma_type=gamma_type)
 
     fig = Figure()
 
@@ -75,6 +77,7 @@ function test_fit_eos()
 
     lines!(ax1, e_true, p_true; color=:blue, label="True EOS")
     lines!(ax1, e_model, p_model; color=:red, linestyle=:dash, label="Fitted EOS")
+    vlines!(ax1, [150.0]; color=:black, linestyle=:dot, label="e0")
 
     save("out/eos_fit_test.png", fig)
 
@@ -88,6 +91,7 @@ function test_fit_eos()
 
     lines!(ax2, e_true, cs2_true; color=:green, label="True cs2")
     lines!(ax2, e_model, cs2_model; color=:orange, linestyle=:dash, label="Fitted cs2")
+    vlines!(ax2, [150.0]; color=:black, linestyle=:dot, label="e0")
 
     save("out/cs2_fit_test.png", fig2)
 end

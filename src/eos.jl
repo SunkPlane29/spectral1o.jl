@@ -25,6 +25,10 @@ function GammaPA(p0, p, pmax, Gamma0, param::AbstractVector, p_interface::Abstra
     Gamma = Gamma_interface[idx]*(p/p_interface[idx])^(param[idx] + 1)
 end
 
+function GammaLogSpec(p0, p, pmax, Gamma0, param::AbstractVector)
+    return Gamma0*exp(sum([param[i]*(log(p/p0))^(i-1) for i in 1:length(param)]))
+end
+
 function get_GammaPA(p0, p, pmax, e0, Gamma0, param::AbstractVector)
     p_interface = exp.(range(log(p0), log(pmax), length=length(param)+1))
     e_interface = zeros(length(p_interface))
@@ -49,7 +53,7 @@ function cs2(p0, p, pmax, Gamma0, param::AbstractVector; GammaF=GammaCheb)
     return 1 / (1 + GammaF(p0, p, pmax, Gamma0, param))
 end
 
-function get_eos(param, crustfile; pmax=1.0e3, ncrust=100, npoints=500, logspacing=false, pa_eos=false)
+function get_eos(param, crustfile; pmax=1.0e3, ncrust=100, npoints=500, logspacing=false, gamma_type=:cheb)
     p_crust, e_crust, cs2_crust = load_crust(crustfile) 
 
     if !issorted(p_crust) && !issorted(e_crust)
@@ -80,8 +84,10 @@ function get_eos(param, crustfile; pmax=1.0e3, ncrust=100, npoints=500, logspaci
     end
 
     GammaF = GammaCheb
-    if pa_eos
-        GammaF = get_GammaPA(p0, pout, pmax, e0, Gamma0, param)
+    if gamma_type == :pa
+        GammaF = get_GammaPA(p0, pmax, pmax, e0, Gamma0, param)
+    elseif gamma_type == :logspec
+        GammaF = GammaLogSpec
     end
 
     eout = zeros(length(pout))
@@ -98,11 +104,10 @@ function get_eos(param, crustfile; pmax=1.0e3, ncrust=100, npoints=500, logspaci
     return ptotal, etotal, cs2total
 end
 
-function chierror(p_true::AbstractVector, e_true::AbstractVector, param::AbstractVector; pa_eos=false)
+function chierror(p_true::AbstractVector, e_true::AbstractVector, param::AbstractVector; gamma_type=:cheb)
     e_itp = DataInterpolations.PCHIPInterpolation(p_true, e_true; extrapolation=ExtrapolationType.Extension)
-    
-    p_model, e_model, _ = get_eos(param, "in/ska.table"; pa_eos=pa_eos)
 
+    p_model, e_model, _ = get_eos(param, "in/ska.table"; gamma_type=gamma_type)
     e0 = 150.0
 
     mask = e_model .>= e0
@@ -117,10 +122,10 @@ function chierror(p_true::AbstractVector, e_true::AbstractVector, param::Abstrac
     return chi2
 end
 
-function fit_param(p_true::AbstractVector, e_true::AbstractVector; n_param=5, pa_eos=false)
-    cost_function(param) = chierror(p_true, e_true, param; pa_eos=pa_eos)
+function fit_param(p_true::AbstractVector, e_true::AbstractVector; n_param=5, gamma_type=:cheb)
+    cost_function(param) = chierror(p_true, e_true, param; gamma_type=gamma_type)
 
-    initial_param = fill(0.2, n_param)
+    initial_param = fill(0.0, n_param)
 
     result = optimize(cost_function, initial_param, LevenbergMarquardt())
     return result.minimizer
