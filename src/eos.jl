@@ -84,7 +84,11 @@ function get_eos(param, crustfile; pmax=1.0e3, ncrust=100, npoints=500, logspaci
         GammaF = get_GammaPA(p0, pout, pmax, e0, Gamma0, param)
     end
 
-    eout = [e(p0, p, pmax, e0, Gamma0, param; GammaF=GammaF) for p in pout]
+    eout = zeros(length(pout))
+    # eout = [e(p0, p, pmax, e0, Gamma0, param; GammaF=GammaF) for p in pout]
+    Threads.@threads for i in 1:length(pout)
+        eout[i] = e(p0, pout[i], pmax, e0, Gamma0, param; GammaF=GammaF)
+    end
     cs2out = [cs2(p0, p, pmax, Gamma0, param; GammaF=GammaF) for p in pout]
 
     ptotal = vcat(collect(pout_crust), collect(pout))
@@ -92,4 +96,32 @@ function get_eos(param, crustfile; pmax=1.0e3, ncrust=100, npoints=500, logspaci
     cs2total = vcat(collect(cs2out_crust), collect(cs2out))
 
     return ptotal, etotal, cs2total
+end
+
+function chierror(p_true::AbstractVector, e_true::AbstractVector, param::AbstractVector; pa_eos=false)
+    e_itp = DataInterpolations.PCHIPInterpolation(p_true, e_true; extrapolation=ExtrapolationType.Extension)
+    
+    p_model, e_model, _ = get_eos(param, "in/ska.table"; pa_eos=pa_eos)
+
+    e0 = 150.0
+
+    mask = e_model .>= e0
+    e_model = e_model[mask]
+    p_model = p_model[mask]
+
+    e_true_model = e_itp.(p_model)
+
+    N = length(e_model)
+
+    chi2 = sum([log(e_model[i]/e_true_model[i])^2 for i in 1:N]) / N
+    return chi2
+end
+
+function fit_param(p_true::AbstractVector, e_true::AbstractVector; n_param=5, pa_eos=false)
+    cost_function(param) = chierror(p_true, e_true, param; pa_eos=pa_eos)
+
+    initial_param = fill(0.2, n_param)
+
+    result = optimize(cost_function, initial_param, LevenbergMarquardt())
+    return result.minimizer
 end

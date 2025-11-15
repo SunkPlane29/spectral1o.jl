@@ -54,3 +54,40 @@ function test_get_eos()
 
     save("out/mlambda_test.png", fig3)
 end
+
+function test_fit_eos()
+    p_true, e_true, cs2_true = load_crust("in/ska.table")
+
+    params = fit_param(p_true, e_true; n_param=12, pa_eos=true)
+
+    println("Fitted parameters: ", params)
+    println("Chi-squared error: ", chierror(p_true, e_true, params; pa_eos=true))
+
+    p_model, e_model, cs2_model = get_eos(params, "in/ska.table"; pa_eos=true)
+
+    fig = Figure()
+
+    ax1 = Axis(fig[1, 1]; 
+        xlabel="e", ylabel="p",
+        xscale=log10, yscale=log10,
+        # limits=(0.7, e[end]/e0, p[findfirst(x -> x > e0, e)], p[end]),
+    )
+
+    lines!(ax1, e_true, p_true; color=:blue, label="True EOS")
+    lines!(ax1, e_model, p_model; color=:red, linestyle=:dash, label="Fitted EOS")
+
+    save("out/eos_fit_test.png", fig)
+
+    fig2 = Figure()
+
+    ax2 = Axis(fig2[1, 1]; 
+        xlabel="e", ylabel="cs2",
+        xscale=log10,
+        # limits=(0.01, e[end]/e0, 0, 1.1*maximum(cs2)),
+    )
+
+    lines!(ax2, e_true, cs2_true; color=:green, label="True cs2")
+    lines!(ax2, e_model, cs2_model; color=:orange, linestyle=:dash, label="Fitted cs2")
+
+    save("out/cs2_fit_test.png", fig2)
+end

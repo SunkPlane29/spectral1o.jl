@@ -5,10 +5,12 @@ using DelimitedFiles
 using DataInterpolations
 using SpecialFunctions
 using QuadGK
+using Optim
+using LeastSquaresOptim
 
 include("util.jl")
 export writedat, filter_monotonic
 include("eos.jl")
-export load_crust, GammaCheb, get_eos
+export load_crust, GammaCheb, get_eos, chierror, fit_param
 
 end
