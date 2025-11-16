@@ -22,11 +22,12 @@ function GammaPA(p0, p, pmax, Gamma0, param::AbstractVector, p_interface::Abstra
         idx -= 1
     end
 
-    Gamma = Gamma_interface[idx]*(p/p_interface[idx])^(param[idx] + 1)
+    Gamma = Gamma_interface[idx]*(p/p_interface[idx])^(param[idx])
+    return Gamma
 end
 
 function GammaLogSpec(p0, p, pmax, Gamma0, param::AbstractVector)
-    return Gamma0*exp(sum([param[i]*(log(p/p0))^(i-1) for i in 1:length(param)]))
+    return Gamma0*exp(sum([param[i]*(log(p/p0))^(i) for i in 1:length(param)]))
 end
 
 function get_GammaPA(p0, p, pmax, e0, Gamma0, param::AbstractVector)
@@ -114,19 +115,56 @@ function chierror(p_true::AbstractVector, e_true::AbstractVector, param::Abstrac
     e_model = e_model[mask]
     p_model = p_model[mask]
 
-    e_true_model = e_itp.(p_model)
+    e_true_core = e_itp.(p_model)
 
     N = length(e_model)
 
-    chi2 = sum([log(e_model[i]/e_true_model[i])^2 for i in 1:N]) / N
-    return chi2
+    # residuals = [log(e_model[i]/e_true_core[i])^2/N for i in 1:N]
+    # return residuals
+
+    residuals = [log(e_model[i]/e_true_core[i]) for i in 1:N]
+    return residuals
+
+    # chi2 = sum([log(e_model[i]/e_true_core[i])^2 for i in 1:N]) / N
+    # return chi2
 end
 
 function fit_param(p_true::AbstractVector, e_true::AbstractVector; n_param=5, gamma_type=:cheb)
     cost_function(param) = chierror(p_true, e_true, param; gamma_type=gamma_type)
 
-    initial_param = fill(0.0, n_param)
+    # initial_param = fill(0.0, n_param)
+    initial_param = (rand(n_param) .- 0.5) * 1e-3
 
-    result = optimize(cost_function, initial_param, LevenbergMarquardt())
+    lower = fill(-1.0, n_param)
+    upper = fill(1.0, n_param)
+
+    # options = Optim.Options(
+    #     iterations=300,
+    #     f_tol=1e-8,
+    #     g_tol=1e-12,
+    #     show_trace=true,
+    #     allow_f_increases=true,
+    # )
+
+    # result = optimize(cost_function, initial_param, LevenbergMarquardt())
+    # result = optimize(cost_function, initial_param, NelderMead())
+    # result = optimize(cost_function, lower, upper, initial_param, Fminbox(NelderMead()), options)
+
+    result = LeastSquaresOptim.optimize(
+        cost_function, initial_param, LevenbergMarquardt();
+        lower=lower, upper=upper,
+        iterations=1000,
+        show_trace=true,
+    )
+
+    residuals = cost_function(result.minimizer)
+    N = length(residuals)
+    final_chi2 = sum(residuals.^2) / N
+
+    println("Optimization converged: ", result.converged)
+    println("Final chi-squared error: ", final_chi2)
+    println("Number of iterations: ", result.iterations)
+    println("Final parameters: ", result.minimizer)
+
     return result.minimizer
 end

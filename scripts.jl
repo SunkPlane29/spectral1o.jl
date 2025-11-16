@@ -57,13 +57,10 @@ end
 
 function test_fit_eos()
     p_true, e_true, cs2_true = load_crust("in/ska.table")
-    gamma_type = :pa
+    gamma_type = :cheb
     nparam = 5
 
     params = fit_param(p_true, e_true; n_param=nparam, gamma_type=gamma_type)
-
-    println("Fitted parameters: ", params)
-    println("Chi-squared error: ", chierror(p_true, e_true, params; gamma_type=gamma_type))
 
     p_model, e_model, cs2_model = get_eos(params, "in/ska.table"; gamma_type=gamma_type)
 
